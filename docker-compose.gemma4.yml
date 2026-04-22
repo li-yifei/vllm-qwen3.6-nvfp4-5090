@@ -1,0 +1,32 @@
+# docker-compose.gemma4.yml - Gemma 4 31B IT Q4_K_M GGUF on RTX 5090
+services:
+  vllm:
+    image: vllm/vllm-openai:gemma4-cu130
+    container_name: ${CONTAINER_NAME:-gemma4-31b-q4km}
+    restart: unless-stopped
+    network_mode: host
+    ipc: host
+    devices:
+      - nvidia.com/gpu=all
+    volumes:
+      - ${HF_CACHE}:/root/.cache/huggingface
+      - ${VLLM_CACHE}:/root/.cache/vllm
+      - ${GGUF_DIR}:/models
+    environment:
+      - HF_TOKEN=${HF_TOKEN:-}
+      - PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+    command:
+      - "/models/${GGUF_FILE}"
+      - "--host=0.0.0.0"
+      - "--port=${PORT:-8000}"
+      - "--max-model-len=${MAX_MODEL_LEN:-32768}"
+      - "--gpu-memory-utilization=${GPU_MEMORY_UTILIZATION:-0.95}"
+      - "--max-num-seqs=${MAX_NUM_SEQS:-4}"
+      - "--max-num-batched-tokens=${MAX_NUM_BATCHED_TOKENS:-4096}"
+      - "--kv-cache-dtype=${KV_CACHE_DTYPE:-fp8}"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${PORT:-8000}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 600s

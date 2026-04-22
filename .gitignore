@@ -1,0 +1,17 @@
+# Environment variables (contains secrets)
+.env
+bench-env
+
+# Python
+__pycache__/
+*.pyc
+
+# Benchmark data (local tooling)
+mt_bench_results/
+mt_bench_questions.jsonl
+mt_bench_eval.py
+run_bench.sh
+stress_test.py
+
+# macos
+.DS_Store

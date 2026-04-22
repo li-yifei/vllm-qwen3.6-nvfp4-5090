@@ -1,0 +1,6 @@
+services:
+  vllm:
+    volumes:
+      - ${HF_CACHE}:/root/.cache/huggingface
+      - ${VLLM_CACHE}:/root/.cache/vllm
+      - /home/mario/qwen-llm-compressor:/models

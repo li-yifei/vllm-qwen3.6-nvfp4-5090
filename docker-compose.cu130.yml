@@ -1,0 +1,41 @@
+# docker-compose.cu130.yml - Qwen3.6 NVFP4 on RTX 5090
+# cu130-nightly variant with persistent local vLLM cache.
+# Keep NVFP4_BACKEND=marlin by default because flashinfer-cutlass may not be
+# available or stable on RTX 5090 yet.
+services:
+  vllm:
+    image: vllm/vllm-openai:cu130-nightly
+    container_name: ${CONTAINER_NAME:-qwen3.6-nvfp4}
+    restart: unless-stopped
+    network_mode: host
+    ipc: host
+    devices:
+      - nvidia.com/gpu=all
+    volumes:
+      - ${HF_CACHE}:/root/.cache/huggingface
+      - ${VLLM_CACHE}:/root/.cache/vllm
+    environment:
+      - HF_TOKEN=${HF_TOKEN:-}
+      - VLLM_USE_FLASHINFER_MOE_FP4=${FLASHINFER_MOE_FP4:-0}
+      - VLLM_NVFP4_GEMM_BACKEND=${NVFP4_BACKEND:-marlin}
+      - PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+      - PYTHONWARNINGS=ignore::UserWarning:vllm.model_executor.layers.fla.ops
+    command:
+      - "${MODEL_ID}"
+      - "--host=0.0.0.0"
+      - "--port=${PORT:-8000}"
+      - "--max-model-len=${MAX_MODEL_LEN:-262144}"
+      - "--gpu-memory-utilization=${GPU_MEMORY_UTILIZATION:-0.8}"
+      - "--max-num-seqs=${MAX_NUM_SEQS:-4}"
+      - "--max-num-batched-tokens=${MAX_NUM_BATCHED_TOKENS:-4096}"
+      - "--kv-cache-dtype=${KV_CACHE_DTYPE:-fp8}"
+      - "--reasoning-parser=${REASONING_PARSER:-qwen3}"
+      - "--enable-auto-tool-choice"
+      - "--tool-call-parser=${TOOL_CALL_PARSER:-qwen3_coder}"
+      # EXTRA_VLLM_ARGS removed: --no-log-stats no longer supported in vLLM nightly
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${PORT:-8000}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 600s
