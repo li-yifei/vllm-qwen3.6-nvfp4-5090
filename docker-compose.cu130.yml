@@ -1,7 +1,7 @@
 # docker-compose.cu130.yml - Qwen3.6 NVFP4 on RTX 5090
 # cu130-nightly variant with persistent local vLLM cache.
-# Keep NVFP4_BACKEND=marlin by default because flashinfer-cutlass may not be
-# available or stable on RTX 5090 yet.
+# Keep NVFP4_BACKEND=marlin by default. For throughput tuning or unsupported
+# checkpoint layouts, set NVFP4_BACKEND=flashinfer-cutlass in the env file.
 services:
   vllm:
     image: vllm/vllm-openai:cu130-nightly

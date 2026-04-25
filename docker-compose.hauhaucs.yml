@@ -1,9 +1,9 @@
-# docker-compose.hauhaucs.yml - HauhauCS Qwen3.5-27B-Uncensored NVFP4 on RTX 5090
-# vLLM v0.17+ natively supports NVFP4 - no patch needed
+# docker-compose.hauhaucs.yml - HauhauCS Qwen3.6-27B-Uncensored NVFP4 on RTX 5090
+# Agent-safe /v1/responses profile: no default thinking leakage, no vLLM patch.
 services:
   vllm:
     image: vllm/vllm-openai:cu130-nightly
-    container_name: ${CONTAINER_NAME:-hauhaucs-qwen3.5-27b-nvfp4}
+    container_name: ${CONTAINER_NAME:-hauhaucs-qwen3.6-27b-nvfp4}
     restart: unless-stopped
     network_mode: host
     ipc: host
@@ -13,6 +13,7 @@ services:
       - ${HF_CACHE}:/root/.cache/huggingface
       - ${VLLM_CACHE}:/root/.cache/vllm
       - ${LOCAL_MODEL_PATH}:/models/hauhaucs-nvfp4:ro
+      - ./templates:/templates:ro
     environment:
       - HF_TOKEN=${HF_TOKEN:-}
       - VLLM_USE_FLASHINFER_MOE_FP4=0
@@ -36,11 +37,12 @@ services:
       - "${MAX_NUM_BATCHED_TOKENS:-4096}"
       - --kv-cache-dtype
       - "${KV_CACHE_DTYPE:-fp8}"
-      - --reasoning-parser
-      - "${REASONING_PARSER:-qwen3}"
+      - --language-model-only
+      - --chat-template
+      - "${CHAT_TEMPLATE:-/templates/qwen3.6_responses_reasoning_switch.jinja}"
       - --enable-auto-tool-choice
       - --tool-call-parser
-      - "${TOOL_CALL_PARSER:-pythonic}"
+      - "${TOOL_CALL_PARSER:-qwen3_coder}"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:${PORT:-8000}/health"]
       interval: 30s

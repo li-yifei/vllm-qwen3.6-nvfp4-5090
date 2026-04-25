@@ -7,11 +7,17 @@ __pycache__/
 *.pyc
 
 # Benchmark data (local tooling)
+logs/
 mt_bench_results/
 mt_bench_questions.jsonl
 mt_bench_eval.py
 run_bench.sh
 stress_test.py
+
+# Local throwaway env files
+.env.*-test
+.env.*-bench
+.env.hauhaucs-local-bench
 
 # macos
 .DS_Store
