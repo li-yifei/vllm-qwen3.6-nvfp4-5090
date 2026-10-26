@@ -2,13 +2,15 @@
 
 Run [Qwen/Qwen3.6-27B](https://huggingface.co/Qwen/Qwen3.6-27B) on a single **NVIDIA RTX 5090** (32 GB) using [vLLM](https://github.com/vllm-project/vllm) with **NVFP4 quantization**.
 
-Default model: [lyf/Qwen3.6-27B-NVFP4](https://huggingface.co/lyf/Qwen3.6-27B-NVFP4) — quantized locally from the official Qwen3.6-27B release.
+Default model: [lyf/Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-NVFP4](https://huggingface.co/lyf/Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-NVFP4) — a HauhauCS-derived text backbone quantized to NVFP4, with preserved MTP/vision tensors. See the model card for lineage and license.
+
+Existing installations using `MODEL_ID=lyf/Qwen3.6-27B-NVFP4` should update `.env` to the public model ID above. This changes the text backbone to the HauhauCS variant. See [issue #1](https://github.com/li-yifei/vllm-qwen3.6-nvfp4-5090/issues/1) for the original download report.
 
 HauhauCS model profile: [lyf/Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-NVFP4](https://huggingface.co/lyf/Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-NVFP4) — text NVFP4 with preserved MTP/vision tensors and an agent-safe `/v1/responses` template.
 
 ## Features
 
-- 256K context length with FP8 KV cache
+- 32K multimodal default with FP8 KV cache; a separate text-only profile uses 128K context
 - NVFP4 quantization via Marlin or FlashInfer-Cutlass GEMM backend
 - Works out of the box with vLLM v0.17+ — no patches or custom builds needed
 - Uses the `vllm/vllm-openai:cu130-nightly` Docker image
@@ -62,7 +64,7 @@ cp .env.hauhaucs .env
 docker compose -f docker-compose.hauhaucs.yml up -d
 ```
 
-For Hub loading instead of a local runtime view, set `LOCAL_MODEL_PATH` to a local snapshot or adapt the compose file to use `--model lyf/Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-NVFP4`.
+This profile mounts a local model directory. Set `LOCAL_MODEL_PATH` to your downloaded HauhauCS snapshot, and set `HF_CACHE` and `VLLM_CACHE` to directories on your machine before starting it. For direct Hub loading, use the Quick Start with `.env.example` and `docker-compose.yml`.
 
 ## Configuration
 
@@ -73,19 +75,28 @@ All user-specific settings live in `.env` (see [`.env.example`](.env.example)):
 | `HF_TOKEN` | Your [Hugging Face token](https://huggingface.co/settings/tokens) (required for gated models) |
 | `HF_CACHE` | Path to your local HF cache directory (e.g. `/home/user/.cache/huggingface`) |
 | `VLLM_CACHE` | Path to vLLM AOT compilation cache (e.g. `/home/user/.cache/vllm`) |
-| `MODEL_ID` | HuggingFace model ID (default: `lyf/Qwen3.6-27B-NVFP4`) |
+| `MODEL_ID` | HuggingFace model ID (default: `lyf/Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-NVFP4`) |
 
 ### Key vLLM Parameters
 
 | Parameter | Default | Notes |
 |---|---|---|
-| `MAX_MODEL_LEN` | `262144` | 256K context window |
-| `GPU_MEMORY_UTILIZATION` | `0.8` | ~26 GB of 32 GB VRAM |
-| `MAX_NUM_SEQS` | `4` | Max concurrent sequences |
+| `MAX_MODEL_LEN` | `32768` | 32K multimodal context; local text-only HauhauCS profile uses 128K |
+| `GPU_MEMORY_UTILIZATION` | `0.92` | Model-card recommendation for RTX 5090 |
+| `MAX_NUM_SEQS` | `1` | Max concurrent sequences |
 | `MAX_NUM_BATCHED_TOKENS` | `4096` | Per-batch token budget |
 | `KV_CACHE_DTYPE` | `fp8` | KV cache precision |
 | `NVFP4_BACKEND` | `marlin` | NVFP4 GEMM backend; `flashinfer-cutlass` is the main fallback/tuning alternative |
-| `CHAT_TEMPLATE` | `/templates/qwen3.6_responses_reasoning_switch.jinja` | Optional template for agent-safe `/v1/responses` serving |
+| `CHAT_TEMPLATE` | `/templates/qwen3.6_responses_reasoning_switch.jinja` | Used by `docker-compose.hauhaucs.yml`; the default compose uses the model template |
+
+### Other Public Models
+
+My [Hugging Face model list](https://huggingface.co/lyf) also includes:
+
+- [Qwen3.6-27B-uncensored-heretic-v2-NVFP4-MTP](https://huggingface.co/lyf/Qwen3.6-27B-uncensored-heretic-v2-NVFP4-MTP)
+- [Qwen3.8-27B-Huihui-Abliterated-NVFP4-MTP-VL](https://huggingface.co/lyf/Qwen3.8-27B-Huihui-Abliterated-NVFP4-MTP-VL)
+
+Follow each model card for its runtime requirements, lineage, and deployment settings. The defaults in this repository target the HauhauCS Qwen3.6 model above.
 
 ### Marlin Status
 
